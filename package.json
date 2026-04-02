@@ -1,12 +1,13 @@
 {
   "name": "gitlab-migration",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Migrate GitLab repository data to Gitea",
   "license": "MIT",
   "author": "Cokesr",
   "type": "module",
   "scripts": {
-    "dev": "npx tsx main.ts",
+    "create": "npx tsx main.ts create",
+    "mirror": "npx tsx main.ts mirror",
     "build": "npx tsc"
   },
   "devDependencies": {

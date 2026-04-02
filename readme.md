@@ -16,7 +16,10 @@
 
 ```bash
 npm install
-npm run dev
+# 查询 gitlab 中的仓库和组织并在 gitea 中创建（你可能会执行多次，因为有可能gitea服务堵塞了，一直执行到仓库全部存在即可）
+npm run create
+# 尝试将 gitlab 中的仓库和组织导入 gitea 中（同上）
+npm run mirror
 ```
 
 ## 环境配置
@@ -27,12 +30,15 @@ npm run dev
 GITLAB_ACCESS_KEY=your_gitlab_token
 GITEA_ACCESS_KEY=your_gitea_token
 
+GITEA_USERNAME=Coke
+GITLAB_USERNAME=Coke
+
 GITLAB_BASE_URL=http://localhost.com      # 纯地址，不含路径
 GITEA_BASE_URL=http://localhost:3000    # 纯地址，不含路径
 ```
 
 ## 其他说明
-1. 创建组织和仓库都有并发次数限制为 10，上传仓库的并发限制为 5
+1. 创建组织和仓库都有并发次数限制为 3，上传仓库的并发限制为 3
 2. 一定要预留一部分空间用于存 mirror 文件（>=你的gitlab仓库容量）
 2. 如果是第一次迁移，则gitea可能会弹出授权按钮确认，不要忘记了；如果出现了授权失败，就重新启动一遍
 3. 如果有一部分迁移失败或者创建失败，就多跑几遍

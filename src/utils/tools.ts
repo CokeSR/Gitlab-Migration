@@ -1,4 +1,5 @@
 import cmd from 'node-cmd';
+import type { GlobalEnvConfig } from '../structs/config.js';
 
 /**
  * gitlab 仓库名规范化（适配gitea）
@@ -29,4 +30,11 @@ export function runGitCommand(command: string): Promise<void> {
             }
         })
     })
+}
+
+// Eg: http://<user>:<access_key>@localhost:3000/user/repo.git
+export function JoinTokenUrl(repoUrl: string, username: string, accessKey: string): string {
+    const proto = repoUrl.split('://')[0]
+    repoUrl = repoUrl.replace(proto + "://", `${proto}://${username}:${accessKey}@`)
+    return repoUrl
 }

@@ -1,9 +1,13 @@
 import type { AxiosInstance } from "axios";
 
+export type Command = 'create' | 'mirror'
+
 // 全局配置
 export interface GlobalEnvConfig {
+    GITLAB_USERNAME: string | undefined
     GITLAB_BASE_URL: string | undefined
     GITLAB_ACCESS_KEY: string | undefined
+    GITEA_USERNAME: string | undefined
     GITEA_BASE_URL: string | undefined
     GITEA_ACCESS_KEY: string | undefined
 }

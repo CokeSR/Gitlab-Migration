@@ -8,7 +8,7 @@ import {
     CreateRepositoryToGitea, QueryOrganizeFromGitlab, CreateOrganizeToGitea
 } from "./src/utils/execute.js";
 
-import type { GlobalEnvConfig, GlobalRequestConfig, GitlabRepositoryInfo, GitlabOrganizeInfo } from './src/structs/config.js';
+import type { GlobalEnvConfig, GlobalRequestConfig, GitlabRepositoryInfo, GitlabOrganizeInfo, Command } from './src/structs/config.js';
 
 // 加载全局配置
 export const env: GlobalEnvConfig | void = LoadGlobalConfig()
@@ -31,13 +31,33 @@ if (process.platform === "win32") {
 }
 
 export async function StartMigrationToGitea(env: GlobalEnvConfig){
+    const command = process.argv[2] as Command | undefined
     const gitlabOrganizeInfo: GitlabOrganizeInfo[] = await QueryOrganizeFromGitlab()
     const gitlabRepoInfos: GitlabRepositoryInfo[] = await QueryRepositoryFromGitlab()
-    
-    await CreateOrganizeToGitea(gitlabOrganizeInfo)
-    await CreateRepositoryToGitea(gitlabRepoInfos)
-    await PullRepositoryMirrorFromGitlab(gitlabRepoInfos)
-    await PushRepositoryMirrorFronGitea(gitlabRepoInfos, env)
+
+    if (!command) {
+        console.log('用法：')
+        console.log('  npm run create   # gitlab -> gitea 创建组织/仓库')
+        console.log('  npm run mirror   # gitlab -> gitea 拉取并推送组织/仓库')
+        process.exit(1)
+    }
+
+    // 根据命令执行不同逻辑
+    switch (command) {
+        case "create":
+            await CreateOrganizeToGitea(gitlabOrganizeInfo)
+            await CreateRepositoryToGitea(gitlabRepoInfos)
+            break
+        case "mirror":
+            await PullRepositoryMirrorFromGitlab(gitlabRepoInfos, env)
+            await PushRepositoryMirrorFronGitea(gitlabRepoInfos, env)
+            break
+        default:
+            console.log('不支持的命令：' + command)
+            process.exit(1)
+    }
+
+    return
 }
 
 StartMigrationToGitea(env)

@@ -1,8 +1,9 @@
 import fs from "fs"
+import fp from 'fs/promises'
 import pLimit from 'p-limit'
 import { GitCloneSaveIn } from "../global.js";
 import { Gitlab, Gitea } from "../../main.js";
-import { normalizeRepoName, runGitCommand } from './tools.js';
+import { JoinTokenUrl, normalizeRepoName, runGitCommand } from './tools.js';
 import type { GitlabRepositoryInfo, GitlabOrganizeInfo } from '../structs/config.js';
 import type { GlobalEnvConfig } from '../structs/config.js';
 import type { LimitFunction } from "p-limit"
@@ -67,18 +68,19 @@ export async function QueryRepositoryFromGitlab(): Promise<GitlabRepositoryInfo[
  * 拉取 gitlab 仓库 mirror
  * Pull GitLab repository mirror
  */
-export async function PullRepositoryMirrorFromGitlab(gitlabRepoInfos: GitlabRepositoryInfo[]) {
+export async function PullRepositoryMirrorFromGitlab(gitlabRepoInfos: GitlabRepositoryInfo[], env: GlobalEnvConfig) {
     if (gitlabRepoInfos.length === 0) {
         return
     }
 
-    const pullRepositoryLimit: LimitFunction = pLimit(10)
+    const pullRepositoryLimit: LimitFunction = pLimit(3)
     const pullRepositoryTasks = gitlabRepoInfos.map(info => {
         const mirrorSaveIn = `${GitCloneSaveIn}/${normalizeRepoName(info.name)}.git`
-        const gitCmd = `git clone --mirror ${info.http_url_to_repo} ${mirrorSaveIn}`
+        const gitCmd = `git clone --mirror ${JoinTokenUrl(info.http_url_to_repo, env.GITLAB_USERNAME || "", env.GITLAB_ACCESS_KEY || "")} ${mirrorSaveIn}`
 
         if (fs.existsSync(mirrorSaveIn)){
-            console.log(`The mirror already exists, skip pull`)
+            console.log(`The mirror already exists, skip it`)
+            //fp.rm(mirrorSaveIn, { recursive: true, force: true })
             return
         }
 
@@ -97,7 +99,7 @@ export async function PullRepositoryMirrorFromGitlab(gitlabRepoInfos: GitlabRepo
  */
 export async function CreateOrganizeToGitea(gitlabOrgs: GitlabOrganizeInfo[]){
     if (gitlabOrgs.length === 0) return
-    const createOrganizeLimit: LimitFunction = pLimit(10)
+    const createOrganizeLimit: LimitFunction = pLimit(3)
     const createOrganizeTasks = gitlabOrgs.map(orgs => {
         return createOrganizeLimit(() => {
             Gitea.post("/orgs", {
@@ -125,7 +127,7 @@ export async function CreateRepositoryToGitea(gitlabRepoInfos: GitlabRepositoryI
         return
     }
 
-    const createRepositoryLimit: LimitFunction = pLimit(10)
+    const createRepositoryLimit: LimitFunction = pLimit(3)
     const createRepositoryTasks = gitlabRepoInfos.map(info => {
         const url = info.namespace.kind === 'group' ? `/orgs/${info.namespace.path}/repos` : `/user/repos`
         return createRepositoryLimit(() => {
@@ -155,12 +157,12 @@ export async function PushRepositoryMirrorFronGitea(gitlabRepoInfos: GitlabRepos
         return
     }
 
-    const pushRepositoryLimit: LimitFunction = pLimit(5)
+    const pushRepositoryLimit: LimitFunction = pLimit(3)
     const pushRepositoryTasks = gitlabRepoInfos.map(info => {
         // 网上查好像也可以这样直接传: git --git-dir=<repo>.git push --mirror http://<token>@localhost:3000/<path>.git
         // 浏览器可能会弹出授权窗口
         const mirrorSaveIn = `${GitCloneSaveIn}/${normalizeRepoName(info.name)}.git`
-        const gitCmd = `git --git-dir=${mirrorSaveIn} push --mirror ${process.env.GITEA_BASE_URL}/${info.namespace.path}/${normalizeRepoName(info.name)}.git`
+        const gitCmd = `git --git-dir=${mirrorSaveIn} push --mirror ${JoinTokenUrl(process.env.GITEA_BASE_URL || "", env.GITEA_USERNAME || "", env.GITEA_ACCESS_KEY || "")}/${info.namespace.path}/${normalizeRepoName(info.name)}.git`
         return pushRepositoryLimit(async () => {
             console.log(`Try uploading repository mirror to gitea: ${info.name}`)
             await runGitCommand(gitCmd)
