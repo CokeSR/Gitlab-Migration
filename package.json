@@ -6,7 +6,8 @@
   "author": "Cokesr",
   "type": "module",
   "scripts": {
-    "dev": "npx tsx main.ts"
+    "dev": "npx tsx main.ts",
+    "build": "npx tsc"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
